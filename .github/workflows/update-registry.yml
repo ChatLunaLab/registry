@@ -1,0 +1,63 @@
+name: Update Registry
+
+# Lives in the PUBLIC output repo. Each run checks out the public
+# ChatLunaLab/registry-source tree, builds the npm plugin index, and commits
+# only the generated files back to this repo. No token or secret is needed:
+# the job's own GITHUB_TOKEN already has contents: write here, and
+# registry-source is publicly readable.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out scanner source
+        uses: actions/checkout@v4
+        with:
+          repository: ChatLunaLab/registry-source
+          path: source
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Enable Corepack and install
+        working-directory: source
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Scan npm and build index
+        working-directory: source
+        run: yarn scan
+        env:
+          NPM_REGISTRY: https://registry.npmjs.org
+
+      - name: Commit generated index
+        env:
+          GIT_USER_NAME: ${{ vars.REGISTRY_GIT_USER || 'chatluna-bot' }}
+          GIT_USER_EMAIL: ${{ vars.REGISTRY_GIT_EMAIL || 'bot@chatluna.chat' }}
+        run: |
+          set -euo pipefail
+
+          cp source/public/index.json index.json
+          cp source/public/version.txt version.txt
+
+          git config user.name "$GIT_USER_NAME"
+          git config user.email "$GIT_USER_EMAIL"
+          git add index.json version.txt
+          if git diff --cached --quiet; then
+            echo "index unchanged"
+          else
+            git commit -m "Update registry index"
+            git push origin HEAD:main
+          fi
