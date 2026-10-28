@@ -1,10 +1,11 @@
 name: Update Registry
 
-# Lives in the PUBLIC output repo. Each run checks out the public
+# Lives in the PUBLIC output repo. Each run checks out the PRIVATE
 # ChatLunaLab/registry-source tree, builds the npm plugin index, and commits
-# only the generated files back to this repo. No token or secret is needed:
-# the job's own GITHUB_TOKEN already has contents: write here, and
-# registry-source is publicly readable.
+# only the generated files back to this repo. Reading the private source repo
+# needs the REGISTRY_SOURCE_TOKEN secret (a fine-grained PAT scoped to read
+# ChatLunaLab/registry-source). Pushing here uses the job's own GITHUB_TOKEN
+# (permissions: contents: write).
 
 on:
   schedule:
@@ -18,15 +19,16 @@ jobs:
   scan-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check out scanner source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ChatLunaLab/registry-source
           path: source
+          token: ${{ secrets.REGISTRY_SOURCE_TOKEN }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 'lts/*'
 
