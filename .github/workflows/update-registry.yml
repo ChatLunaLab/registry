@@ -6,14 +6,22 @@ name: Update Registry
 # needs the REGISTRY_SOURCE_TOKEN secret (a fine-grained PAT scoped to read
 # ChatLunaLab/registry-source). Pushing here uses the job's own GITHUB_TOKEN
 # (permissions: contents: write).
+#
+# GitHub drops scheduled runs under load, so the real 15-minute cadence comes
+# from an external cron calling the workflow_dispatch API. The schedule below
+# is only a backstop, offset from the top of the hour where drops are worst.
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: update-registry
+  cancel-in-progress: false
 
 jobs:
   scan-and-publish:
