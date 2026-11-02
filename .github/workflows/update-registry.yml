@@ -8,7 +8,7 @@ name: Update Registry
 # (permissions: contents: write).
 #
 # GitHub drops scheduled runs under load, so the real 15-minute cadence comes
-# from an external cron calling the workflow_dispatch API. The schedule below
+# from the Cloudflare Worker in trigger/ calling workflow_dispatch. The schedule below
 # is only a backstop, offset from the top of the hour where drops are worst.
 
 on:
